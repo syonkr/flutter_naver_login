@@ -5,13 +5,6 @@ import SafariServices
 import UIKit
 
 /// 네이버 로그인 상태를 나타내는 열거형
-private enum NaverLoginState {
-    case idle
-    case inProgress
-    case cancelled
-}
-
-/// 네이버 로그인 상태를 나타내는 열거형
 public enum NaverLoginStatus: String {
     case loggedIn = "loggedIn"
     case loggedOut = "loggedOut"
@@ -58,45 +51,15 @@ private enum NaverLoginPluginMethod {
 @objc
 public class FlutterNaverLoginPlugin: NSObject, FlutterPlugin {
     private var pendingResult: FlutterResult?
-    private var loginState: NaverLoginState = .idle
 
     // MARK: - Lifecycle
 
     override public init() {
         super.init()
-        setupNotifications()
     }
 
     deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-
-    // MARK: - Private Methods
-
-    private func setupNotifications() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(appDidEnterBackground),
-            name: UIApplication.didEnterBackgroundNotification,
-            object: nil)
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(appWillEnterForeground),
-            name: UIApplication.willEnterForegroundNotification,
-            object: nil)
-    }
-
-    @objc private func appDidEnterBackground() {
-        if case .inProgress = loginState {
-            loginState = .cancelled
-        }
-    }
-
-    @objc private func appWillEnterForeground() {
-        if case .cancelled = loginState {
-            sendError(message: "Login cancelled by user")
-            loginState = .idle
-        }
+        // Cleanup if needed
     }
 
     // MARK: - Flutter Plugin Registration
@@ -198,7 +161,6 @@ public class FlutterNaverLoginPlugin: NSObject, FlutterPlugin {
     }
 
     private func handleLogin() {
-        loginState = .inProgress
         NidOAuth.shared.requestLogin { [weak self] result in
             switch result {
             case .success(let loginResult):
@@ -218,9 +180,13 @@ public class FlutterNaverLoginPlugin: NSObject, FlutterPlugin {
                     }
                 }
             case .failure(let error):
-                self?.sendError(message: error.localizedDescription)
+                // 에러 메시지를 더 자세히 확인
+                if error.localizedDescription.contains("cancel") {
+                    self?.sendError(message: "Login cancelled by user")
+                } else {
+                    self?.sendError(message: error.localizedDescription)
+                }
             }
-            self?.loginState = .idle
         }
     }
 
