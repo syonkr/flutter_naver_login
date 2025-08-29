@@ -118,8 +118,8 @@ public class FlutterNaverLoginPlugin: NSObject, FlutterPlugin {
         // SDK 초기화
         NidOAuth.shared.initialize()
         
-        // 기본 로그인 동작 설정 (웹뷰)
-        NidOAuth.shared.setLoginBehavior(.inAppBrowser)
+        // 기본 로그인 동작 설정 (네이버 앱이 설치된 경우 네이버 앱으로 인증, 네이버 앱이 설치되어있지 않은 경우 SafariViewController를 실행해 인증하는 방식)
+        NidOAuth.shared.setLoginBehavior(.appPreferredWithInAppBrowserFallback)
         
         let channel = FlutterMethodChannel(
             name: "flutter_naver_login",
@@ -181,10 +181,12 @@ public class FlutterNaverLoginPlugin: NSObject, FlutterPlugin {
         // 로그인 동작 설정
         if let behavior = args["loginBehavior"] as? String {
             switch behavior.lowercased() {
-            case "web":
+            case "inAppBrowser":
                 NidOAuth.shared.setLoginBehavior(.inAppBrowser)
             case "app":
                 NidOAuth.shared.setLoginBehavior(.app)
+            case "appPreferredWithInAppBrowserFallback":
+                NidOAuth.shared.setLoginBehavior(.appPreferredWithInAppBrowserFallback)
             default:
                 print("Unknown login behavior: \(behavior)")
                 break
